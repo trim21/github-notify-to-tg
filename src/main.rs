@@ -9,10 +9,6 @@ use reqwest::Client;
 use serde_json::json;
 use std::cmp::Ordering;
 use std::env;
-use std::sync::{
-  atomic::{AtomicBool, Ordering as AtomicOrdering},
-  Arc,
-};
 use std::time::Duration;
 
 #[derive(Debug, Clone)]
@@ -47,13 +43,6 @@ async fn main() -> Result<()> {
   let store = connect_store(&cfg.database_url).await?;
   store.init().await?;
 
-  let running = Arc::new(AtomicBool::new(true));
-  let shutdown_flag = Arc::clone(&running);
-  ctrlc::set_handler(move || {
-    shutdown_flag.store(false, AtomicOrdering::SeqCst);
-  })
-  .context("set ctrl-c handler")?;
-
   println!(
     "daemon started, poll_interval={}s, database_url={}",
     cfg.poll_interval.as_secs(),
@@ -62,23 +51,32 @@ async fn main() -> Result<()> {
 
   let mut since_cursor: Option<DateTime<Utc>> = None;
 
-  while running.load(AtomicOrdering::SeqCst) {
-    match poll_once(&cfg, &http, &octocrab, store.as_ref(), since_cursor).await {
-      Ok(latest_seen) => {
-        if let Some(ts) = latest_seen {
-          since_cursor = Some(ts - ChronoDuration::seconds(1));
-        }
+  loop {
+    tokio::select! {
+      signal = tokio::signal::ctrl_c() => {
+        signal.context("listen for ctrl-c")?;
+        break;
       }
-      Err(err) => {
-        eprintln!("poll failed: {err:#}");
+      result = poll_once(&cfg, &http, &octocrab, store.as_ref(), since_cursor) => {
+        match result {
+          Ok(latest_seen) => {
+            if let Some(ts) = latest_seen {
+              since_cursor = Some(ts - ChronoDuration::seconds(1));
+            }
+          }
+          Err(err) => {
+            eprintln!("poll failed: {err:#}");
+          }
+        }
       }
     }
 
-    let mut remaining = cfg.poll_interval.as_secs();
-    while remaining > 0 && running.load(AtomicOrdering::SeqCst) {
-      let sleep_for = remaining.min(1);
-      tokio::time::sleep(Duration::from_secs(sleep_for)).await;
-      remaining -= sleep_for;
+    tokio::select! {
+      signal = tokio::signal::ctrl_c() => {
+        signal.context("listen for ctrl-c")?;
+        break;
+      }
+      _ = tokio::time::sleep(cfg.poll_interval) => {}
     }
   }
 
