@@ -16,7 +16,7 @@ env:
 
 jobs:
   cargo-lint-build:
-    name: Cargo lint and build
+    name: cargo-lint-test
     runs-on: ubuntu-latest
 
     steps:
@@ -34,3 +34,12 @@ jobs:
 
       - name: Build
         run: cargo build --locked --all-targets
+
+  pre-commit:
+    name: pre-commit
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: trim21/actions/prek@master

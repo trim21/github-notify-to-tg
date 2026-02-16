@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   docker-build:
-    name: Docker build
+    name: docker-build-check
     runs-on: ubuntu-latest
 
     steps:
