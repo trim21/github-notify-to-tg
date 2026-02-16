@@ -35,6 +35,7 @@ jobs:
           images: ${{ steps.image.outputs.name }}
           tags: |
             type=sha
+            type=raw,value=master,enable=${{ github.ref == 'refs/heads/master' }}
             type=ref,event=tag
 
       - name: Log in to GHCR
