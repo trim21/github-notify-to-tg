@@ -29,7 +29,7 @@ pub async fn connect_store(database_url: &str) -> Result<Box<dyn NotificationSto
       .connect(database_url)
       .await
       .with_context(|| format!("connect postgres database: {database_url}"))?;
-    return Ok(Box::new(PostgresStore { pool }));
+    return Ok(Box::new(PostgresStore { pool }) as Box<dyn NotificationStore>);
   }
 
   if database_url.starts_with("sqlite://") {
@@ -39,7 +39,7 @@ pub async fn connect_store(database_url: &str) -> Result<Box<dyn NotificationSto
       .connect(database_url)
       .await
       .with_context(|| format!("connect sqlite database: {database_url}"))?;
-    return Ok(Box::new(SqliteStore { pool }));
+    return Ok(Box::new(SqliteStore { pool }) as Box<dyn NotificationStore>);
   }
 
   bail!("unsupported DATABASE_URL scheme, use sqlite:// or postgres://")
