@@ -14,7 +14,6 @@ use std::time::Duration;
 #[derive(Debug, Clone)]
 struct Config {
   github_token: String,
-  github_api_base: String,
   telegram_bot_token: String,
   telegram_chat_id: String,
   poll_interval: Duration,
@@ -31,14 +30,10 @@ async fn main() -> Result<()> {
     .build()
     .context("build http client")?;
 
-  let mut octocrab_builder =
-    Octocrab::builder().personal_token(cfg.github_token.clone());
-  if cfg.github_api_base != "https://api.github.com" {
-    octocrab_builder = octocrab_builder
-      .base_uri(cfg.github_api_base.as_str())
-      .with_context(|| format!("invalid GITHUB_API_BASE: {}", cfg.github_api_base))?;
-  }
-  let octocrab = octocrab_builder.build().context("build octocrab client")?;
+  let octocrab = Octocrab::builder()
+    .personal_token(cfg.github_token.clone())
+    .build()
+    .context("build octocrab client")?;
 
   let store = connect_store(&cfg.database_url).await?;
   store.init().await?;
@@ -89,10 +84,6 @@ fn load_config() -> Result<Config> {
   let telegram_bot_token = required_env("TELEGRAM_BOT_TOKEN")?;
   let telegram_chat_id = required_env("TELEGRAM_CHAT_ID")?;
 
-  let github_api_base = env_or_default("GITHUB_API_BASE", "https://api.github.com")
-    .trim_end_matches('/')
-    .to_string();
-
   let poll_interval_secs = parse_u64_env_or_default("POLL_INTERVAL_SECONDS", 60)?;
   let http_timeout_secs = parse_u64_env_or_default("HTTP_TIMEOUT_SECONDS", 15)?;
   let database_url = env_or_default("DATABASE_URL", "sqlite://./data/notify.db");
@@ -106,7 +97,6 @@ fn load_config() -> Result<Config> {
 
   Ok(Config {
     github_token,
-    github_api_base,
     telegram_bot_token,
     telegram_chat_id,
     poll_interval: Duration::from_secs(poll_interval_secs),
