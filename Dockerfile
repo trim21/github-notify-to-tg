@@ -3,8 +3,6 @@ WORKDIR /src
 
 COPY rust-toolchain.toml ./
 COPY Cargo.toml ./
-RUN cargo fetch
-
 COPY src ./src
 RUN cargo build --release
 
