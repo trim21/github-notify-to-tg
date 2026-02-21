@@ -145,7 +145,13 @@ async fn poll_once(
       continue;
     }
 
-    let message = format_message(&notification);
+    let resolved_html_url = if let Some(api_url) = &notification.subject.url {
+      resolve_subject_html_url(http, &cfg.github_token, api_url.as_str()).await
+    } else {
+      None
+    };
+
+    let message = format_message(&notification, resolved_html_url.as_deref());
     if let Err(err) = send_telegram(cfg, http, &message).await {
       eprintln!("telegram send failed for {notification_id}: {err:#}");
       continue;
@@ -201,6 +207,36 @@ async fn fetch_notifications(
   Ok(all)
 }
 
+async fn resolve_subject_html_url(
+  http: &Client,
+  github_token: &str,
+  api_url: &str,
+) -> Option<String> {
+  #[derive(serde::Deserialize)]
+  struct SubjectUrlResponse {
+    html_url: String,
+  }
+
+  let response = http
+    .get(api_url)
+    .bearer_auth(github_token)
+    .header("Accept", "application/vnd.github+json")
+    .header("User-Agent", "github-notify-to-tg")
+    .send()
+    .await
+    .ok()?;
+
+  if !response.status().is_success() {
+    return None;
+  }
+
+  response
+    .json::<SubjectUrlResponse>()
+    .await
+    .ok()
+    .map(|payload| payload.html_url)
+}
+
 async fn send_telegram(cfg: &Config, http: &Client, message: &str) -> Result<()> {
   let url = format!(
     "https://api.telegram.org/bot{}/sendMessage",
@@ -232,7 +268,7 @@ async fn send_telegram(cfg: &Config, http: &Client, message: &str) -> Result<()>
   Ok(())
 }
 
-fn format_message(n: &GitHubNotification) -> String {
+fn format_message(n: &GitHubNotification, html_url: Option<&str>) -> String {
   let repo_name = n
     .repository
     .full_name
@@ -246,8 +282,8 @@ fn format_message(n: &GitHubNotification) -> String {
   output.push(format!("Repo: {}", repo_name));
   output.push(format!("Title: {}", n.subject.title));
   output.push(format!("Updated: {}", updated_at_shanghai.to_rfc3339()));
-  if let Some(url) = &n.subject.url {
-    output.push(format!("{}", url));
+  if let Some(url) = html_url {
+    output.push(url.to_string());
   }
 
   output.join("\n")
