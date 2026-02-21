@@ -136,12 +136,17 @@ async fn poll_once(
 
   for notification in notifications {
     let notification_id = notification.id.to_string();
+    let dedupe_key = format!(
+      "{}:{}",
+      notification_id,
+      notification.updated_at.timestamp()
+    );
 
     if !notification.unread {
       continue;
     }
 
-    if store.is_sent(&notification_id).await? {
+    if store.is_sent(&dedupe_key).await? {
       continue;
     }
 
@@ -157,7 +162,7 @@ async fn poll_once(
       continue;
     }
 
-    store.mark_sent(&notification_id).await?;
+    store.mark_sent(&dedupe_key).await?;
     sent_count += 1;
   }
 
