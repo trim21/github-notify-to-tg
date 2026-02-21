@@ -240,12 +240,13 @@ fn format_message(n: &GitHubNotification) -> String {
     .unwrap_or("unknown/unknown");
 
   format!(
-        "🔔 GitHub Notification\nRepo: {}\nType: {}\nReason: {}\nTitle: {}\nUpdated: {}\nInbox: https://github.com/notifications",
+      "🔔 GitHub Notification\nRepo: {}\nType: {}\nReason: {}\nTitle: {}\nUpdated: {}\nThread: https://github.com/notifications/threads/{}\nInbox: https://github.com/notifications",
         repo_name,
         n.subject.r#type,
         n.reason,
         n.subject.title,
-        n.updated_at.to_rfc3339()
+      n.updated_at.to_rfc3339(),
+      n.id
     )
 }
 
