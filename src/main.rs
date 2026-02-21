@@ -238,13 +238,14 @@ fn format_message(n: &GitHubNotification) -> String {
     .full_name
     .as_deref()
     .unwrap_or("unknown/unknown");
+  let updated_at_shanghai = n.updated_at.with_timezone(&chrono_tz::Asia::Shanghai);
 
   let mut output = Vec::new();
 
   output.push("🔔 GitHub Notification".to_string());
   output.push(format!("Repo: {}", repo_name));
   output.push(format!("Title: {}", n.subject.title));
-  output.push(format!("Updated: {}", n.updated_at.to_rfc3339()));
+  output.push(format!("Updated: {}", updated_at_shanghai.to_rfc3339()));
   if let Some(url) = &n.subject.url {
     output.push(format!("{}", url));
   }
