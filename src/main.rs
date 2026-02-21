@@ -9,6 +9,7 @@ use reqwest::Client;
 use serde_json::json;
 use std::cmp::Ordering;
 use std::env;
+use std::fmt::Write;
 use std::time::Duration;
 
 #[derive(Debug, Clone)]
@@ -239,15 +240,20 @@ fn format_message(n: &GitHubNotification) -> String {
     .as_deref()
     .unwrap_or("unknown/unknown");
 
-  format!(
-      "🔔 GitHub Notification\nRepo: {}\nType: {}\nReason: {}\nTitle: {}\nUpdated: {}\nThread: https://github.com/notifications/threads/{}\nInbox: https://github.com/notifications",
-        repo_name,
-        n.subject.r#type,
-        n.reason,
-        n.subject.title,
-      n.updated_at.to_rfc3339(),
-      n.id
-    )
+  let mut output = String::new();
+
+  let _ = write!(output, "🔔 GitHub Notification\n");
+  let _ = write!(output, "Repo: {}\n", repo_name);
+  let _ = write!(output, "Title: {}\n", n.subject.title);
+  let _ = write!(output, "Updated: {}\n", n.updated_at.to_rfc3339());
+  match &n.subject.url {
+    Some(url) => {
+      let _ = write!(output, "{}", url);
+    }
+    None => {}
+  }
+
+  output
 }
 
 fn required_env(name: &str) -> Result<String> {
