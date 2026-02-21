@@ -246,6 +246,7 @@ async fn send_telegram(cfg: &Config, http: &Client, message: &str) -> Result<()>
   let payload = json!({
       "chat_id": cfg.telegram_chat_id,
       "text": message,
+      "parse_mode": "Markdown",
       "disable_web_page_preview": true
   });
 
