@@ -279,9 +279,9 @@ fn format_message(n: &GitHubNotification, html_url: Option<&str>) -> String {
   let mut output = Vec::new();
 
   output.push("🔔 GitHub Notification".to_string());
-  output.push(format!("Repo: {}", repo_name));
-  output.push(format!("Title: {}", n.subject.title));
-  output.push(format!("Updated: {}", updated_at_shanghai.to_rfc3339()));
+  output.push(format!("Repo: `{}`", repo_name));
+  output.push(format!("Title: `{}`", n.subject.title));
+  output.push(format!("Updated: `{}`", updated_at_shanghai.to_rfc3339()));
   if let Some(url) = html_url {
     output.push(url.to_string());
   }
