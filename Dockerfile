@@ -3,8 +3,9 @@ WORKDIR /src
 
 COPY rust-toolchain.toml ./
 COPY Cargo.toml ./
-COPY src ./src
+RUN cargo fetch
 
+COPY src ./src
 RUN cargo build --release
 
 FROM gcr.io/distroless/cc-debian13:latest@sha256:22fd4bd55e5f0ef1929985f111816ba1e43c00a0ddeb001c0fdfb2724b4e3cc2
