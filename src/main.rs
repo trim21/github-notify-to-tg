@@ -23,6 +23,10 @@ struct Config {
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
+  rustls::crypto::aws_lc_rs::default_provider()
+    .install_default()
+    .map_err(|_| anyhow::anyhow!("install rustls aws-lc-rs provider"))?;
+
   let cfg = load_config()?;
 
   let http = Client::builder()
