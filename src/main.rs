@@ -251,7 +251,7 @@ async fn send_telegram(cfg: &Config, http: &Client, message: &str) -> Result<()>
   let payload = json!({
       "chat_id": cfg.telegram_chat_id,
       "text": message,
-      "parse_mode": "Markdown",
+      "parse_mode": "HTML",
       "disable_web_page_preview": true
   });
 
@@ -285,9 +285,15 @@ fn format_message(n: &GitHubNotification, html_url: Option<&str>) -> String {
   let mut output = Vec::new();
 
   output.push("🔔 GitHub Notification".to_string());
-  output.push(format!("Repo: `{}`", repo_name));
-  output.push(format!("Title: `{}`", n.subject.title));
-  output.push(format!("Updated: `{}`", updated_at_shanghai.to_rfc3339()));
+  output.push(format!("Repo: <code>{}</code>", repo_name));
+  output.push(format!(
+    "Title: <code>{}</code>",
+    html_escape::encode_safe(&n.subject.title)
+  ));
+  output.push(format!(
+    "Updated: <code>{}</code>",
+    updated_at_shanghai.to_rfc3339()
+  ));
   if let Some(url) = html_url {
     output.push(url.to_string());
   }
