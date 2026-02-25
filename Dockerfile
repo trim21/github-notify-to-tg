@@ -1,4 +1,4 @@
-FROM rust:1.93.1-slim-bullseye@sha256:eca54108db942b7003a5753cae5588004d0f06e9df8a9bad9e28af17dbd8a8ea AS builder
+FROM rust:1.93.1-slim-bullseye@sha256:6137a7b1d4ff24ef2fe63e6ae40ed9b3d17b48f70fd2516a9c52c9fa54ea2391 AS builder
 WORKDIR /src
 
 COPY rust-toolchain.toml ./
