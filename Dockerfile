@@ -6,7 +6,7 @@ COPY Cargo.toml ./
 COPY src ./src
 RUN cargo build --release
 
-FROM gcr.io/distroless/cc-debian13:latest@sha256:22fd4bd55e5f0ef1929985f111816ba1e43c00a0ddeb001c0fdfb2724b4e3cc2
+FROM gcr.io/distroless/cc-debian13:latest@sha256:5c21e542a03a94d9598ddf9a985c790fd574171610c1b87d464a294b305bca2a
 WORKDIR /app
 
 COPY --from=builder /src/target/release/github-notify-to-tg /usr/local/bin/github-notify-to-tg
