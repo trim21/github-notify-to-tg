@@ -150,13 +150,13 @@ async fn poll_once(
       continue;
     }
 
-    let resolved_html_url = if let Some(api_url) = &notification.subject.url {
-      resolve_subject_html_url(http, &cfg.github_token, api_url.as_str()).await
+    let subject_info = if let Some(api_url) = &notification.subject.url {
+      resolve_subject_info(http, &cfg.github_token, api_url.as_str()).await
     } else {
       None
     };
 
-    let message = format_message(&notification, resolved_html_url.as_deref());
+    let message = format_message(&notification, subject_info.as_ref());
     if let Err(err) = send_telegram(cfg, http, &message).await {
       eprintln!("telegram send failed for {notification_id}: {err:#}");
       continue;
@@ -212,14 +212,27 @@ async fn fetch_notifications(
   Ok(all)
 }
 
-async fn resolve_subject_html_url(
+#[derive(Debug)]
+struct SubjectInfo {
+  html_url: String,
+  state: Option<String>,
+  state_reason: Option<String>,
+  merged: Option<bool>,
+  draft: Option<bool>,
+}
+
+async fn resolve_subject_info(
   http: &Client,
   github_token: &str,
   api_url: &str,
-) -> Option<String> {
+) -> Option<SubjectInfo> {
   #[derive(serde::Deserialize)]
-  struct SubjectUrlResponse {
+  struct SubjectApiResponse {
     html_url: String,
+    state: Option<String>,
+    state_reason: Option<String>,
+    merged: Option<bool>,
+    draft: Option<bool>,
   }
 
   let response = http
@@ -236,10 +249,16 @@ async fn resolve_subject_html_url(
   }
 
   response
-    .json::<SubjectUrlResponse>()
+    .json::<SubjectApiResponse>()
     .await
     .ok()
-    .map(|payload| payload.html_url)
+    .map(|p| SubjectInfo {
+      html_url: p.html_url,
+      state: p.state,
+      state_reason: p.state_reason,
+      merged: p.merged,
+      draft: p.draft,
+    })
 }
 
 async fn send_telegram(cfg: &Config, http: &Client, message: &str) -> Result<()> {
@@ -274,18 +293,51 @@ async fn send_telegram(cfg: &Config, http: &Client, message: &str) -> Result<()>
   Ok(())
 }
 
-fn format_message(n: &GitHubNotification, html_url: Option<&str>) -> String {
+fn format_subject_status(subject_type: &str, info: Option<&SubjectInfo>) -> String {
+  match subject_type {
+    "Issue" => match info.and_then(|i| i.state.as_deref()) {
+      Some("open") => "🟢 Issue (Open)".to_string(),
+      Some("closed") => match info.and_then(|i| i.state_reason.as_deref()) {
+        Some("not_planned") => "⚪ Issue (Not Planned)".to_string(),
+        _ => "🟣 Issue (Closed)".to_string(),
+      },
+      _ => "Issue".to_string(),
+    },
+    "PullRequest" => match info.and_then(|i| i.state.as_deref()) {
+      Some("open") => {
+        if info.and_then(|i| i.draft) == Some(true) {
+          "⚪ PR (Draft)".to_string()
+        } else {
+          "🟢 PR (Open)".to_string()
+        }
+      }
+      Some("closed") => {
+        if info.and_then(|i| i.merged) == Some(true) {
+          "🟣 PR (Merged)".to_string()
+        } else {
+          "🔴 PR (Closed)".to_string()
+        }
+      }
+      _ => "PR".to_string(),
+    },
+    other => other.to_string(),
+  }
+}
+
+fn format_message(n: &GitHubNotification, info: Option<&SubjectInfo>) -> String {
   let repo_name = n
     .repository
     .full_name
     .as_deref()
     .unwrap_or("unknown/unknown");
   let updated_at_shanghai = n.updated_at.with_timezone(&chrono_tz::Asia::Shanghai);
+  let status = format_subject_status(&n.subject.r#type, info);
 
   let mut output = Vec::new();
 
   output.push("🔔 GitHub Notification".to_string());
   output.push(format!("Repo: <code>{}</code>", repo_name));
+  output.push(format!("Type: {status}"));
   output.push(format!(
     "Title: <code>{}</code>",
     html_escape::encode_safe(&n.subject.title)
@@ -294,7 +346,7 @@ fn format_message(n: &GitHubNotification, html_url: Option<&str>) -> String {
     "Updated: <code>{}</code>",
     updated_at_shanghai.to_rfc3339()
   ));
-  if let Some(url) = html_url {
+  if let Some(url) = info.map(|i| i.html_url.as_str()) {
     output.push(url.to_string());
   }
 
