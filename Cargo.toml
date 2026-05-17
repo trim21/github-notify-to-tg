@@ -9,7 +9,7 @@ async-trait = "0.1.89"
 chrono = { version = "0.4.44", default-features = false, features = ["clock"] }
 chrono-tz = "0.10.4"
 html-escape = "0.2.13"
-octocrab = "0.50.0"
+octocrab = "0.51.0"
 reqwest = { version = "0.13.3", default-features = false, features = ["json", "rustls"] }
 rustls = { version = "0.23.40", features = ["aws_lc_rs"] }
 serde = { version = "1.0.228", features = ["derive"] }
