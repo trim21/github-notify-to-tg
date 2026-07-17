@@ -15,4 +15,4 @@ rustls = { version = "0.23.42", features = ["aws_lc_rs"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "tls-rustls-aws-lc-rs", "sqlite", "postgres"] }
-tokio = { version = "1.52.4", features = ["rt-multi-thread", "net", "time", "macros", "signal"] }
+tokio = { version = "1.53.0", features = ["rt-multi-thread", "net", "time", "macros", "signal"] }
