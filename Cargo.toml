@@ -14,5 +14,5 @@ reqwest = { version = "0.13.5", default-features = false, features = ["json", "r
 rustls = { version = "0.23.46", features = ["aws_lc_rs"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
-sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "tls-rustls-aws-lc-rs", "sqlite", "postgres"] }
+sqlx = { version = "0.9.1", default-features = false, features = ["runtime-tokio", "tls-rustls-aws-lc-rs", "sqlite", "postgres"] }
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "net", "time", "macros", "signal"] }
